@@ -1,40 +1,38 @@
 
-resource "google_storage_bucket" "gcp-udemy-bucket-terraform" {
- name          = "gcp-udemy-bucket-terraform"
- storage_class = "nearline"
- location      = "us-west2"
-
- labels = {
-    "env" = "tf_env"
-    "dep" = "compliance"
- }
-
-uniform_bucket_level_access = true
-
-lifecycle_rule {
-  condition {
-    age = 5
-    
-  }
-  action {
-    type = "SetStorageClass"
-    storage_class = "Coldline"
-    
-  }
- }
-
- retention_policy {
-    is_locked = true
-    retention_period = 864000
- }
-
-
+resource "google_compute_network" "auto-vpc-tf" {
+ project                  = "gcp-tutorial-project-1-417922" 
+  name                    = "auto-vpc-tf"
+  auto_create_subnetworks = true
 }
 
+resource "google_compute_network" "custom-vpc-tf" {
+  project                 = "gcp-tutorial-project-1-417922"
+  name                    = "custom-vpc-tf"
+  auto_create_subnetworks = false
+}
 
-resource "google_storage_bucket_object" "picture" {
-    bucket = google_storage_bucket.gcp-udemy-bucket-terraform.name
-    name   = "class_5_index"
-    source = "index (1).html"
+resource "google_compute_subnetwork" "sub-la" {
+  name                     =      "sub-la"
+  ip_cidr_range            = "10.1.0.0/24"
+  region                   = "us-west2"
+  private_ip_google_access = true 
+  network       = google_compute_network.custom-vpc-tf.id
+}
+
+resource "google_compute_firewall" "allow-icmp" {
+  name = "allow-icmp"
+  network = google_compute_network.custom-vpc-tf.id
+  allow {
+    protocol = "icmp"
+  }
+  source_ranges =  ["73.239.53.23/32"]
+}
+
+output "auto" {
+  value = google_compute_network.auto-vpc-tf.id
+}
+
+output "custom" {
+  value = google_compute_network.custom-vpc-tf.id
 }
 
